@@ -3,7 +3,7 @@ name: Sports schedule update
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17,47 * * * *"
+    - cron: "* * * * *"
       timezone: "Asia/Seoul"
   push:
     branches: ["main"]
