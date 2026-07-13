@@ -19,6 +19,7 @@ concurrency:
 jobs:
   update-and-deploy:
     runs-on: ubuntu-latest
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -32,12 +33,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Fetch Ticketlink API
-        run: python update.py
-      
       - name: Show trigger
         run: echo "Triggered by ${{ github.event_name }}"
-      
+
+      - name: Fetch Ticketlink API
+        run: python update.py
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
