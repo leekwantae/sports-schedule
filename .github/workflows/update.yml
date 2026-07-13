@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17,47 * * * *"
+      timezone: "Asia/Seoul"
   push:
     branches: ["main"]
 
