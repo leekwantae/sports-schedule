@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>스포츠 경기·예매 통합 일정</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#10213a">
+<style>
+*{box-sizing:border-box}
+:root{--line:#dce5f0;--blue:#2563eb;--green:#16a34a;--red:#dc2626;--muted:#64748b}
+body{margin:0;background:linear-gradient(180deg,#dce9f8,#f7f9fc 380px);font-family:Pretendard,"Noto Sans KR",Arial,sans-serif;color:#172033}
+.wrap{max-width:1450px;margin:auto;padding:20px}
+header{background:linear-gradient(135deg,#0f172a,#225283);color:white;padding:27px;border-radius:26px;box-shadow:0 18px 48px #0f172a2e}
+h1{margin:0 0 8px;font-size:clamp(28px,4vw,45px);letter-spacing:-.045em}
+header p{margin:0;color:#dbeafe}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.stat{background:#ffffff18;border:1px solid #ffffff26;border-radius:15px;padding:13px}
+.stat b{display:block;font-size:23px}.stat span{font-size:12px;color:#dbeafe}
+.updated{margin-top:13px;color:#bfdbfe;font-size:13px;line-height:1.7}
+.panel{background:white;border:1px solid var(--line);border-radius:20px;box-shadow:0 12px 30px #0f172a14}
+.api{margin-top:18px;padding:16px}.api h2{margin:0 0 12px;font-size:18px}
+.api-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.api-card{border:1px solid var(--line);border-radius:14px;padding:12px;background:#f8fafc}
+.api-card.good{border-color:#86efac;background:#f0fdf4}.api-card.bad{border-color:#fca5a5;background:#fef2f2}
+.api-card b,.api-card small{display:block}.api-card small{color:var(--muted);line-height:1.55;margin-top:3px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}.dot.good{background:var(--green)}.dot.bad{background:var(--red)}
+.controls{display:grid;grid-template-columns:1.35fr .85fr .7fr .9fr .8fr;gap:10px;margin:18px 0;padding:14px}
+input,select{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:12px 13px;background:white;font:inherit}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.quick button{border:1px solid var(--line);background:white;border-radius:999px;padding:9px 13px;font-weight:800;cursor:pointer}
+.quick button.active{background:var(--blue);color:white;border-color:var(--blue)}
+.table-panel{overflow:hidden}.table-wrap{overflow:auto}
+table{width:100%;min-width:1050px;border-collapse:collapse}
+th{background:#f1f5f9;padding:13px 10px;text-align:left;font-size:13px;color:#475569}
+td{padding:14px 10px;border-top:1px solid #edf2f7;font-size:14px}
+.match{font-weight:900}.muted{color:var(--muted)}
+.badge{display:inline-block;padding:7px 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
+.open{background:#fee2e2;color:#b91c1c}.today{background:#ffedd5;color:#c2410c}.tomorrow{background:#fef3c7;color:#92400e}.soon{background:#dcfce7;color:#166534}.future{background:#e2e8f0;color:#334155}
+.link{display:inline-block;background:#ef4444;color:white;text-decoration:none;border-radius:10px;padding:9px 12px;font-weight:900}
+.star{border:0;background:transparent;font-size:22px;cursor:pointer}.empty{padding:55px;text-align:center;color:var(--muted)}
+.cards{display:none}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:16px}
+.card-top,.card-bottom{display:flex;justify-content:space-between;gap:10px;align-items:center}.card h3{margin:12px 0 7px}.card p{color:var(--muted);line-height:1.6}
+footer{text-align:center;padding:20px;color:var(--muted);font-size:12px}
+@media(max-width:1100px){.api-grid{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr 1fr 1fr}}
+@media(max-width:850px){.stats{grid-template-columns:1fr 1fr}.api-grid{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.table-panel{display:none}.cards{display:grid;gap:12px}}
+@media(max-width:560px){.wrap{padding:10px}header{padding:20px 16px;border-radius:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>🏟️ 스포츠 경기·예매 통합 일정</h1>
+<p>GitHub 서버가 티켓링크 API를 자동 조회해 최신 일정을 제공합니다.</p>
+<div class="stats">
+<div class="stat"><b id="total">0</b><span>전체 일정</span></div>
+<div class="stat"><b id="open">0</b><span>예매중</span></div>
+<div class="stat"><b id="future">0</b><span>예매 예정</span></div>
+<div class="stat"><b id="shown">0</b><span>현재 표시</span></div>
+</div>
+<div class="updated" id="updated">아직 자동 갱신 전입니다.</div>
+</header>
+
+<section class="panel api">
+<h2>구단별 API 조회 상태</h2>
+<div class="api-grid" id="apiGrid"></div>
+</section>
+
+<section class="panel controls">
+<input id="search" placeholder="팀명·상대팀·구장 검색">
+<select id="teamFilter"><option value="">전체 구단</option></select>
+<select id="monthFilter"><option value="">전체 월</option></select>
+<select id="statusFilter">
+<option value="">전체 상태</option><option value="open">예매중</option><option value="future">예매 예정</option>
+<option value="today">오늘 오픈</option><option value="tomorrow">내일 오픈</option><option value="3days">3일 이내</option><option value="7days">7일 이내</option>
+</select>
+<select id="sortFilter"><option value="game">경기일 빠른 순</option><option value="booking">예매일 빠른 순</option></select>
+</section>
+
+<div class="quick">
+<button class="active" data-mode="all">전체</button>
+<button data-mode="open">예매중</button>
+<button data-mode="future">예매 예정</button>
+<button data-mode="favorites">⭐ 관심경기</button>
+</div>
+
+<section class="panel table-panel">
+<div class="table-wrap">
+<table>
+<thead><tr><th>관심</th><th>경기일</th><th>시간</th><th>구단</th><th>대진</th><th>구장</th><th>예매오픈</th><th></th></tr></thead>
+<tbody id="tbody"></tbody>
+</table>
+</div>
+<div class="empty" id="empty" style="display:none">조건에 맞는 일정이 없습니다.</div>
+</section>
+<div class="cards" id="cards"></div>
+<footer>자동 갱신 시각: 한국시간 09:05 · 12:05 · 18:05</footer>
+</div>
+
+<script src="./data.js"></script>
+<script>
+const DATA=window.SPORTS_DATA||{events:[],sourceStatus:[]};
+let events=DATA.events||[],mode='all';
+const favorites=new Set(JSON.parse(localStorage.getItem('sportsFavorites')||'[]'));
+const $=id=>document.getElementById(id);
+
+function key(e){return e.scheduleId||e.id}
+function toggleFav(k){favorites.has(k)?favorites.delete(k):favorites.add(k);localStorage.setItem('sportsFavorites',JSON.stringify([...favorites]));render()}
+function bookingDate(e){return e.booking==='예매중'?new Date('2000-01-01'):new Date(String(e.booking||'2999-12-31').replace(' ','T'))}
+function badgeClass(e){if(e.booking==='예매중')return'open';if(!e.booking)return'future';const n=new Date();n.setHours(0,0,0,0);const d=bookingDate(e);d.setHours(0,0,0,0);const x=Math.round((d-n)/86400000);return x===0?'today':x===1?'tomorrow':x>=0&&x<=7?'soon':'future'}
+function bookingText(e){if(e.booking==='예매중')return'예매중';if(!e.booking)return'확인 필요';const d=bookingDate(e);return `${d.getMonth()+1}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} 오픈`}
+function match(e){return e.away?`${e.away} vs ${e.home}`:(e.title||e.home||'일정')}
+function rebuild(){
+ $('teamFilter').innerHTML='<option value="">전체 구단</option>'+[...new Set(events.map(e=>e.team))].sort().map(x=>`<option>${x}</option>`).join('');
+ $('monthFilter').innerHTML='<option value="">전체 월</option>'+[...new Set(events.map(e=>e.date.slice(5,7)))].sort().map(x=>`<option value="${x}">${Number(x)}월</option>`).join('');
+}
+function filterStatus(e,f){if(!f)return true;if(f==='open')return e.booking==='예매중';if(f==='future')return e.booking!=='예매중';if(!e.booking||e.booking==='예매중')return false;const n=new Date();n.setHours(0,0,0,0);const d=bookingDate(e);d.setHours(0,0,0,0);const x=Math.round((d-n)/86400000);return f==='today'?x===0:f==='tomorrow'?x===1:f==='3days'?x>=0&&x<=3:x>=0&&x<=7}
+function renderStatus(){
+ const list=DATA.sourceStatus||[];
+ $('apiGrid').innerHTML=list.length?list.map(x=>`<div class="api-card ${x.success?'good':'bad'}"><b><span class="dot ${x.success?'good':'bad'}"></span>${x.team}</b><small>${x.success?`성공 · ${x.count}건`:'실패'}</small><small>${x.checkedAt?new Date(x.checkedAt).toLocaleString('ko-KR'):'-'}</small>${x.success?'':`<small>${x.message||''}</small>`}</div>`).join(''):'<div class="api-card">아직 자동 갱신 기록이 없습니다.</div>';
+}
+function render(){
+ const q=$('search').value.trim().toLowerCase(),team=$('teamFilter').value,month=$('monthFilter').value,status=$('statusFilter').value,sort=$('sortFilter').value;
+ let list=events.filter(e=>{const text=[e.team,e.away,e.home,e.venue,e.title].join(' ').toLowerCase();if(q&&!text.includes(q))return false;if(team&&e.team!==team)return false;if(month&&e.date.slice(5,7)!==month)return false;if(!filterStatus(e,status))return false;if(mode==='open'&&e.booking!=='예매중')return false;if(mode==='future'&&e.booking==='예매중')return false;if(mode==='favorites'&&!favorites.has(key(e)))return false;return true});
+ list.sort((a,b)=>sort==='booking'?bookingDate(a)-bookingDate(b):new Date(a.date+'T'+a.time)-new Date(b.date+'T'+b.time));
+ $('tbody').innerHTML=list.map(e=>`<tr><td><button class="star" onclick='toggleFav(${JSON.stringify(key(e))})'>${favorites.has(key(e))?'★':'☆'}</button></td><td><b>${e.date.slice(5).replace('-','.')}</b></td><td>${e.time}</td><td><b>${e.team}</b></td><td class="match">${match(e)}</td><td class="muted">${e.venue}</td><td><span class="badge ${badgeClass(e)}">${bookingText(e)}</span></td><td><a class="link" href="${e.link}" target="_blank">예매</a></td></tr>`).join('');
+ $('cards').innerHTML=list.map(e=>`<article class="card"><div class="card-top"><b>${e.date} · ${e.time}</b><button class="star" onclick='toggleFav(${JSON.stringify(key(e))})'>${favorites.has(key(e))?'★':'☆'}</button></div><h3>${match(e)}</h3><p>${e.team}<br>${e.venue}<br>${e.title}</p><div class="card-bottom"><span class="badge ${badgeClass(e)}">${bookingText(e)}</span><a class="link" href="${e.link}" target="_blank">예매</a></div></article>`).join('');
+ $('empty').style.display=list.length?'none':'block';$('total').textContent=events.length;$('open').textContent=events.filter(e=>e.booking==='예매중').length;$('future').textContent=events.filter(e=>e.booking!=='예매중').length;$('shown').textContent=list.length;
+ const r=DATA.queryRange||{};$('updated').innerHTML=DATA.updatedAt?`마지막 자동 갱신: <b>${new Date(DATA.updatedAt).toLocaleString('ko-KR')}</b><br>조회 범위: ${r.startDate||'-'} ~ ${r.endDate||'-'}`:'아직 자동 갱신 전입니다.';
+}
+document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.quick button').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;render()});
+['search','teamFilter','monthFilter','statusFilter','sortFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
+if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+rebuild();renderStatus();render();
+</script>
+</body>
+</html>
