@@ -98,8 +98,19 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:12px}
 <footer>자동 갱신 시각: 한국시간 09:05 · 12:05 · 18:05</footer>
 </div>
 
-<script src="./data.js"></script>
 <script>
+function loadLatestData() {
+  const script = document.createElement("script");
+  script.src = "./data.js?t=" + Date.now();
+  script.onload = initializePage;
+  script.onerror = () => {
+    document.getElementById("updated").textContent = "최신 일정 파일을 불러오지 못했습니다.";
+  };
+  document.head.appendChild(script);
+}
+
+function initializePage() {
+
 const DATA=window.SPORTS_DATA||{events:[],sourceStatus:[]};
 let events=DATA.events||[],mode='all';
 const favorites=new Set(JSON.parse(localStorage.getItem('sportsFavorites')||'[]'));
@@ -133,6 +144,8 @@ document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{document.qu
 ['search','teamFilter','monthFilter','statusFilter','sortFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
 rebuild();renderStatus();render();
+}
+loadLatestData();
 </script>
 </body>
 </html>
