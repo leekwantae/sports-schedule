@@ -136,19 +136,12 @@ const HOME_STADIUMS={
 function teamMatches(e,selected){
  if(!selected)return true;
 
- const selectedName=normalizeTeamName(selected);
- const homeName=normalizeTeamName(e.home);
  const venueName=normalizeTeamName(e.venue);
-
- const isHomeTeam=
-   homeName===selectedName ||
-   homeName.includes(selectedName) ||
-   selectedName.includes(homeName);
-
- if(!isHomeTeam)return false;
-
  const stadiums=HOME_STADIUMS[selected]||[];
- if(!stadiums.length)return true;
+
+ // 팀 선택 시 홈팀·원정팀 이름은 보지 않고,
+ // 해당 팀의 홈구장 명칭만 기준으로 필터링합니다.
+ if(!stadiums.length)return false;
 
  return stadiums.some(stadium=>{
    const target=normalizeTeamName(stadium);
