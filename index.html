@@ -46,6 +46,54 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:12px}
 @media(max-width:1100px){.api-grid{grid-template-columns:repeat(2,1fr)}.controls{grid-template-columns:1fr 1fr 1fr}}
 @media(max-width:850px){.stats{grid-template-columns:1fr 1fr}.api-grid{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.table-panel{display:none}.cards{display:grid;gap:12px}}
 @media(max-width:560px){.wrap{padding:10px}header{padding:20px 16px;border-radius:18px}}
+
+.update-tools{
+  margin-top:18px;
+  padding:15px 16px;
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.version-info{
+  font-size:12px;
+  color:var(--muted);
+  line-height:1.7;
+}
+.version-info b{color:#172033}
+.update-buttons{display:flex;gap:8px;flex-wrap:wrap}
+.update-btn{
+  border:1px solid #cbd5e1;
+  background:white;
+  color:#172033;
+  border-radius:11px;
+  padding:10px 13px;
+  font-weight:800;
+  cursor:pointer;
+}
+.update-btn:hover{background:#f1f5f9}
+.update-btn.primary{
+  background:var(--blue);
+  color:white;
+  border-color:var(--blue);
+}
+.update-message{
+  width:100%;
+  display:none;
+  border-radius:10px;
+  padding:10px 12px;
+  font-size:12px;
+  font-weight:700;
+  background:#eff6ff;
+  color:#1d4ed8;
+}
+@media(max-width:650px){
+  .update-tools{align-items:stretch}
+  .update-buttons{width:100%}
+  .update-btn{flex:1}
+}
+
 </style>
 </head>
 <body>
@@ -95,6 +143,20 @@ footer{text-align:center;padding:20px;color:var(--muted);font-size:12px}
 <div class="empty" id="empty" style="display:none">조건에 맞는 일정이 없습니다.</div>
 </section>
 <div class="cards" id="cards"></div>
+
+<section class="panel update-tools" aria-label="페이지 업데이트 정보">
+  <div class="version-info">
+    <div>페이지 버전: <b id="pageVersion">2026.07.13-1</b></div>
+    <div>HTML 수정 시각: <b id="htmlModified">확인 중</b></div>
+    <div>현재 불러온 시각: <b id="pageLoaded">확인 중</b></div>
+  </div>
+  <div class="update-buttons">
+    <button type="button" class="update-btn primary" id="reloadLatest">최신 버전 다시 불러오기</button>
+    <button type="button" class="update-btn" id="clearCache">캐시 초기화</button>
+  </div>
+  <div class="update-message" id="updateMessage"></div>
+</section>
+
 <footer>자동 갱신 시각: 한국시간 09:05 · 12:05 · 18:05</footer>
 </div>
 
@@ -159,6 +221,80 @@ function render(){
 }
 document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.quick button').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;render()});
 ['search','teamFilter','monthFilter','statusFilter','sortFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
+
+
+const PAGE_VERSION='2026.07.13-1';
+
+function formatKoreanDate(value){
+  const d=value instanceof Date?value:new Date(value);
+  return Number.isNaN(d.getTime())?'-':d.toLocaleString('ko-KR');
+}
+
+function showUpdateMessage(message){
+  const box=$('updateMessage');
+  box.textContent=message;
+  box.style.display='block';
+}
+
+async function removeOldPwaData(){
+  const results=[];
+
+  if('serviceWorker' in navigator){
+    try{
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registrations.map(registration=>registration.unregister()));
+      if(registrations.length)results.push(`서비스 워커 ${registrations.length}개 해제`);
+    }catch(error){
+      console.warn('서비스 워커 해제 실패:',error);
+    }
+  }
+
+  if('caches' in window){
+    try{
+      const cacheNames=await caches.keys();
+      await Promise.all(cacheNames.map(name=>caches.delete(name)));
+      if(cacheNames.length)results.push(`캐시 ${cacheNames.length}개 삭제`);
+    }catch(error){
+      console.warn('캐시 삭제 실패:',error);
+    }
+  }
+
+  return results;
+}
+
+function reloadWithoutCache(){
+  const url=new URL(location.href);
+  url.searchParams.set('_refresh',Date.now().toString());
+  location.replace(url.toString());
+}
+
+$('pageVersion').textContent=PAGE_VERSION;
+$('htmlModified').textContent=formatKoreanDate(document.lastModified);
+$('pageLoaded').textContent=formatKoreanDate(new Date());
+
+$('reloadLatest').addEventListener('click',()=>{
+  showUpdateMessage('최신 파일을 다시 불러오는 중입니다.');
+  reloadWithoutCache();
+});
+
+$('clearCache').addEventListener('click',async()=>{
+  const button=$('clearCache');
+  button.disabled=true;
+  button.textContent='초기화 중...';
+  showUpdateMessage('기존 서비스 워커와 브라우저 캐시를 정리하고 있습니다.');
+
+  const results=await removeOldPwaData();
+  showUpdateMessage((results.length?results.join(' · '):'삭제할 이전 캐시가 없습니다.')+' 새로고침합니다.');
+  setTimeout(reloadWithoutCache,700);
+});
+
+// 예전에 등록된 PWA 서비스 워커가 남아 있으면 자동 해제합니다.
+removeOldPwaData().then(results=>{
+  if(results.length){
+    console.log('이전 PWA 데이터 정리:',results.join(', '));
+  }
+});
+
 
 rebuild();renderStatus();render();
 </script>
