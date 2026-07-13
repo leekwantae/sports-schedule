@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>스포츠 경기·예매 통합 일정</title>
-<link rel="manifest" href="./manifest.webmanifest">
+
 <link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="theme-color" content="#10213a">
 <style>
@@ -159,7 +159,7 @@ function render(){
 }
 document.querySelectorAll('.quick button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.quick button').forEach(x=>x.classList.remove('active'));b.classList.add('active');mode=b.dataset.mode;render()});
 ['search','teamFilter','monthFilter','statusFilter','sortFilter'].forEach(id=>$(id).addEventListener(id==='search'?'input':'change',render));
-if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));
+
 rebuild();renderStatus();render();
 </script>
 </body>
