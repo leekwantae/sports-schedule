@@ -34,7 +34,10 @@ jobs:
 
       - name: Fetch Ticketlink API
         run: python update.py
-
+      
+      - name: Show trigger
+        run: echo "Triggered by ${{ github.event_name }}"
+      
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
